@@ -1,47 +1,39 @@
-import nltk
-import requests
-import json
-import keyboard
+import logging
 
-import pprint as pp
-import pickle
+from aiogram import Bot, Dispatcher
 
-def get_all_keys(dictionary, depth=0):
-    keys = []
-    indent = '    ' * depth
-    for key, value in dictionary.items():
-        keys.append(f"{indent}{key}")
-        if isinstance(value, dict):
-            nested_keys = get_all_keys(value, depth=depth + 1)
-            keys.extend(nested_keys)
-    return keys
+from aiogram.enums.parse_mode import ParseMode
+from aiogram.fsm.storage.memory import MemoryStorage
+
+from telegram_bot.config.config_reader import config
+
+from telegram_bot.handlers.common import router
+import asyncio
+from telegram_bot.utils.commands import set_commands
+
+# Установка спииска комманд
 
 
-def get_response_text():
-    token = "f0048ed764374ae2897424fd7ad6074d"
-    url = "https://searchplatform.rospatent.gov.ru/patsearch/v0.2/search"
+async def start_bot(bot: Bot):
+    await set_commands(bot=bot)
 
-    headers = {'Content-Type': 'application/json', 'Authorization': f'Bearer {token}'}
 
-    data_row = {'limit': 10, 'filter': {'date_published': {'range': {'gt': '20000101'}}}}
+async def main():
 
-    # response = requests.post(url, headers = headers, data= json.dumps(data_row))
 
-    print(json.dumps(data_row))
-    response = requests.post(url, headers=headers, data=json.dumps(data_row))
+    bot = Bot(token=config.bot_token.get_secret_value(),
+              parse_mode=ParseMode.HTML)
+    #await bot.session.close()
 
-    print(response.status_code)
-    print(response.text)
+    dp = Dispatcher(storage=MemoryStorage())
+    dp.startup.register(start_bot)
+    dp.include_router(router=router)
+    await bot.delete_webhook(drop_pending_updates=True)
+    await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+    await bot.close()
 
-    return json.loads(response.text)
 
-a = get_response_text()
-print(a)
+if __name__ == "__main__":
 
-'''
-pp.pprint(patent)
-
-all_keys = get_all_keys(patent)
-json_str = json.dumps(all_keys, indent=2)
-print(json_str)
-'''
+    logging.basicConfig(level=logging.INFO)
+    asyncio.run(main())

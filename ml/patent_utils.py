@@ -3,7 +3,6 @@ import json
 from ml.preprocess import *
 
 
-from ml import model_embedding
 
 def get_patent_all_keys(dictionary, depth = 0):
     # Получение иерархической структуры патента
